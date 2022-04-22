@@ -1,0 +1,90 @@
+---
+- hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks: 
+  
+  - name: Add Google official GPG key
+    apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      state: present
+  - name: Add Kubernetes Repository
+    apt_repository:
+      repo: deb http://apt.kubernetes.io/ kubernetes-xenial main 
+      state: present
+      filename: kubernetes
+      mode: 0600
+
+  - name: Installing Kubernetes Cluster Packages.
+    apt: 
+      name:
+        - kubeadm
+        - kubectl
+        - kubelet
+        - kubernetes-cni
+      update_cache: yes  
+      state: latest   
+      
+  - name: Disable SWAP 
+    shell: sudo swapoff -a
+  - name: Disable SWAP in fstab 
+    lineinfile:
+      path: /etc/fstab
+      regexp: 'swap'
+      state: absent  
+    
+  - name: lsmod br_netfilter
+    shell: lsmod | grep br_netfilter; sudo modprobe br_netfilter         
+
+      
+  - name: ensure net.bridge.bridge-nf-call-iptables is set to 1
+    sysctl:
+      name: net.bridge.bridge-nf-call-iptables
+      value: 1
+      state: present 
+  
+  
+  - name: Create a directory - docker
+    file:
+      path: /etc/docker
+      state: directory
+      mode: '0755'    
+
+  - name: copy content to daemon.json
+    shell: |      
+      cat <<EOF | sudo tee /etc/docker/daemon.json
+      { "exec-opts": ["native.cgroupdriver=systemd"],
+      "log-driver": "json-file",
+      "log-opts":
+      { "max-size": "100m" },
+      "storage-driver": "overlay2"
+      }
+      EOF
+  
+  - name: Enable service docker, and enable persistently
+    service: 
+      name: docker
+      enabled: yes
+      
+  - name: Just force systemd to reread configs (2.4 and above)
+    systemd:
+      daemon_reload: yes
+ 
+  - name: Reload service httpd, in all cases
+    service:
+      name: docker
+      state: restarted 
+      
+  - name: Enable service kubelet, and enable persistently
+    service: 
+      name: kubelet
+      enabled: yes       
+
+  - name: Reboot all the kubernetes nodes.
+    reboot:
+      post_reboot_delay: 5      
+      #connect_timeout: 600
+      test_command: uptime    
+         
+      

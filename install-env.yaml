@@ -1,0 +1,16 @@
+---
+- hosts: all
+  become: yes
+  gather_facts: no  
+
+- name: Install docker and Prerequisites
+  import_playbook: docker.yaml
+  
+- name: Install kubernetes on all machines - master and clients
+  import_playbook: k8s.yaml
+
+- name: Configure only the master - init..
+  import_playbook: k8s-master.yaml    
+  
+- name: Join workers to master by the token
+  import_playbook: join-workers.yaml    
