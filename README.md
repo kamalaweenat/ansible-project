@@ -5,7 +5,7 @@
 
 Install/Update Kubernetes (k8s) to the latest version
 
-You need to edit the (hosts)[https://github.com/kamalaweenat/ansible-project/blob/main/hosts] file and set the master machine IP
+You need to edit the [hosts](https://github.com/kamalaweenat/ansible-project/blob/main/hosts) file and set the master machine IP
 and the worker's IPs.
 
 
